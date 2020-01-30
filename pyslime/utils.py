@@ -184,15 +184,29 @@ def transform_to_cartesian(ra,dec,redshift,use_lumdist=True,cosmo=None):
     y = radial * np.sin(polar) * np.sin(azimuth)
     return x,y,z
 
-def idx_to_cartesian(i,j,k,brick_size=360,minval = -0.035, maxval = 0.035):
+def idx_to_cartesian(i,j,k,slime=None,griddims=[360,360,360],minvals = [-0.035,-0.035,-0.035],
+                     maxvals = [0.035,0.035,0.035]):
+
+    if slime is None:
+        griddims = np.array(griddims)
+        minvals = np.array(minvals)
+        maxvals = np.array(maxvals)
+    else:
+        griddims = slime.griddims
+        minvals = slime.mincoords
+        maxvals = slime.maxcoords
 
     # find approximate interval and increment final element to include maxval
-    interval = (maxval-minval)/brick_size
-    increment = interval/brick_size
-    vals = np.linspace(minval, maxval+increment, brick_size)
-    z = vals[i]
-    y = vals[j]
-    x = vals[k]
+    xincrement = (maxvals[0] - minvals[0])/griddims[0]
+    yincrement = (maxvals[1] - minvals[1]) / griddims[1]
+    zincrement = (maxvals[2] - minvals[2]) / griddims[2]
+    xvals = np.linspace(minvals[0], maxvals[0]+xincrement, griddims[0])
+    yvals = np.linspace(minvals[1], maxvals[1] + yincrement, griddims[1])
+    zvals = np.linspace(minvals[2], maxvals[2] + zincrement, griddims[2])
+
+    x = xvals[i]
+    y = yvals[j]
+    z = zvals[k]
     return x,y,z
 
 def check_unit(unit):

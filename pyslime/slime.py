@@ -13,13 +13,15 @@ class Slime(object):
         self.gridcenter = np.array(gridcenter)
 
         ### Calculate min coords to speed up operations later on
-        self.calc_min_coords()
+        self.calc_extreme_coords()
 
 
-    def calc_min_coords(self):
+    def calc_extreme_coords(self):
         try:
             mincoords = self.gridcenter - self.physicaldims/2.
             self.mincoords = mincoords
+            maxcoords = self.gridcenter + self.physicaldims / 2.
+            self.maxcoords = maxcoords
         except:
             pass
 
@@ -77,6 +79,21 @@ class Slime(object):
         idxs = self.cartesian_to_idx(cart[0], cart[1], cart[2])
 
         return self.data[idxs[0], idxs[1], idxs[2]]
+
+    def standardize(self,mean=None,stddev=None):
+        randx = np.random.randint(0, np.shape(self.data)[0], size=100000)
+        randy = np.random.randint(0, np.shape(self.data)[1], size=100000)
+        randz = np.random.randint(0, np.shape(self.data)[2], size=100000)
+        randvals = self.data[randx,randy,randz]
+        if mean is None:
+            mean = np.mean(randvals[~np.isneginf(randvals)])
+        if stddev is None:
+            stddev = np.std(randvals[~np.isneginf(randvals)],dtype=np.float32)
+        self.data = (self.data - mean) / stddev
+
+
+
+
 
 
 
