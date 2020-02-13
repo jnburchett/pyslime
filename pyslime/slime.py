@@ -81,19 +81,17 @@ class Slime(object):
         return self.data[idxs[0], idxs[1], idxs[2]]
 
     def standardize(self,mean=None,stddev=None):
-        randx = np.random.randint(0, np.shape(self.data)[0], size=100000)
-        randy = np.random.randint(0, np.shape(self.data)[1], size=100000)
-        randz = np.random.randint(0, np.shape(self.data)[2], size=100000)
-        randvals = self.data[randx,randy,randz]
+        randvals = self.random_sample(100000)
         if mean is None:
             mean = np.mean(randvals[~np.isneginf(randvals)])
         if stddev is None:
             stddev = np.std(randvals[~np.isneginf(randvals)],dtype=np.float32)
         self.data = (self.data - mean) / stddev
 
-
-
-
+    def random_sample(self,size=10000):
+        import pyslime.utils as pu
+        randvals = pu.sample_cube(self.data,size)
+        return randvals
 
 
 

@@ -1,4 +1,5 @@
 import numpy as np
+from astropy.cosmology import Planck15
 
 def load_slime_data(datafile,griddims,dtype=np.float16, axes=None):
     raw_data = np.fromfile(datafile, dtype=dtype)
@@ -213,6 +214,28 @@ def check_unit(unit):
     if unit == 'mpc':
         unit = 'Mpc'
     return unit
+
+def cartesian_to_sky(x,y,z,cosmo=Planck15,return_redshift=True):
+    from astropy.cosmology import z_at_value
+    from astropy import units as u
+    ra = np.arctan2(y,x) * 180.0 / np.pi
+    dist = np.sqrt(x**2+y**2+z**2)
+    dec = 90.0 - np.arccos(z/dist) / np.pi * 180.
+    if return_redshift:
+        try:
+            redshift = z_at_value(cosmo.luminosity_distance, dist * u.Mpc)
+        except:
+            redshift = [z_at_value(cosmo.luminosity_distance, dd) for dd in dist*u.Mpc]
+        return ra,dec,redshift
+    else:
+        return ra,dec
+
+def sample_cube(cube,size=100000):
+    randx = np.random.randint(0, np.shape(cube)[0], size=size)
+    randy = np.random.randint(0, np.shape(cube)[1], size=size)
+    randz = np.random.randint(0, np.shape(cube)[2], size=size)
+    randvals = cube[randx, randy, randz]
+    return randvals
 
 
 
