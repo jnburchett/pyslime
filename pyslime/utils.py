@@ -1,9 +1,13 @@
 import numpy as np
 from astropy.cosmology import Planck15
 
-def load_slime_data(datafile,griddims,dtype=np.float16, axes=None):
+def load_slime_data(datafile,griddims,dtype=np.float16, axes='xyz',
+                    with_velocity=False):
     raw_data = np.fromfile(datafile, dtype=dtype)
-    voxels = raw_data.reshape((griddims[2],griddims[1],griddims[0]))
+    if with_velocity:
+        voxels = raw_data.reshape((griddims[2], griddims[1], griddims[0],4))
+    else:
+        voxels = raw_data.reshape((griddims[2],griddims[1],griddims[0]))
 
 
     if axes is not None:
@@ -11,11 +15,16 @@ def load_slime_data(datafile,griddims,dtype=np.float16, axes=None):
         xidx = axes.index('x')
         yidx = axes.index('y')
         zidx = axes.index('z')
-        print(np.shape(voxels))
+        print(np.shape(voxels),(xidx,yidx,zidx))
         #idxarr = np.array([xidx,yidx,zidx])
         #idxarr = np.roll(idxarr,2)
         #voxels = np.transpose(voxels,[idxarr[0],idxarr[1],idxarr[2]])
-        voxels = np.transpose(voxels,[2,1,0])
+        if with_velocity:
+            voxels = np.transpose(voxels, [zidx, yidx, xidx, 3])
+            #voxels = np.transpose(voxels, [2, 1, 0, 3])
+        else:
+            voxels = np.transpose(voxels,[zidx, yidx, xidx])
+            #voxels = np.transpose(voxels, [2, 1, 0])
     return voxels
 
 def parse_meta_file(metafile,axes='xyz'):
@@ -41,12 +50,12 @@ def parse_meta_file(metafile,axes='xyz'):
             if unit != metadict['physical_unit']:
                raise ValueError('Units of grid center do not match those of size')
             metadict['grid_center'] = reorder_axes(gc,axes)
-        elif 'move distance' in ll:
+        elif ('move distance' in ll)&('grid' not in ll):
             md, unit = parse_meta_line_val(ll)
             fitpars['move_dist'] = md
             unit = check_unit(unit)
             fitpars['dist_unit'] = unit
-        elif 'sense distance' in ll:
+        elif ('sense distance' in ll)&('grid' not in ll):
             sd, unit = parse_meta_line_val(ll)
             fitpars['sense_dist'] = sd
             unit = check_unit(unit)
@@ -198,12 +207,13 @@ def idx_to_cartesian(i,j,k,slime=None,griddims=[360,360,360],minvals = [-0.035,-
         maxvals = slime.maxcoords
 
     # find approximate interval and increment final element to include maxval
-    xincrement = (maxvals[0] - minvals[0])/griddims[0]
-    yincrement = (maxvals[1] - minvals[1]) / griddims[1]
-    zincrement = (maxvals[2] - minvals[2]) / griddims[2]
-    xvals = np.linspace(minvals[0], maxvals[0]+xincrement, griddims[0])
-    yvals = np.linspace(minvals[1], maxvals[1] + yincrement, griddims[1])
-    zvals = np.linspace(minvals[2], maxvals[2] + zincrement, griddims[2])
+    xincrement = maxvals[0] - minvals[0]/griddims[0]
+    yincrement = maxvals[1] - minvals[1]/ griddims[1]
+    zincrement = maxvals[2] - minvals[2] / griddims[2]
+    xvals = np.linspace(minvals[0], maxvals[0], griddims[0])
+    yvals = np.linspace(minvals[1], maxvals[1], griddims[1])
+    zvals = np.linspace(minvals[2], maxvals[2], griddims[2])
+
 
     x = xvals[i]
     y = yvals[j]
@@ -230,12 +240,41 @@ def cartesian_to_sky(x,y,z,cosmo=Planck15,return_redshift=True):
     else:
         return ra,dec
 
-def sample_cube(cube,size=100000):
+def sample_cube(cube,size=100000,velocities=False):
     randx = np.random.randint(0, np.shape(cube)[0], size=size)
     randy = np.random.randint(0, np.shape(cube)[1], size=size)
     randz = np.random.randint(0, np.shape(cube)[2], size=size)
-    randvals = cube[randx, randy, randz]
+    if velocities:
+        randvals = [cube[randx, randy, randz,i] for i in range(4)]
+    else:
+        randvals = cube[randx, randy, randz]
     return randvals
+
+def pack_data_binary(datafile,racol='ra',deccol='dec',distcol='lumdist',
+                     masscol='logMass'):
+    tab = np.genfromtxt(datafile, names=True, dtype=None,
+                        encoding = None)
+    try:
+        azimuth = tab[racol] / 180.0 * np.pi
+        polar = (90. - tab[deccol]) / 180.0 * np.pi
+        radius = tab[distcol]
+        x = radius * np.sin(polar) * np.cos(azimuth)
+        y = radius * np.sin(polar) * np.sin(azimuth)
+        z = radius * np.cos(polar)
+        mass = tab[masscol]
+    except:
+        import pdb; pdb.set_trace()
+    #data = np.zeros((len(tab) - 1, 4), dtype=np.float32)
+
+    data = np.array([x, y, z, mass],dtype=np.float32).T
+    print('Min/Max X: {} {}'.format(np.min(data[:, 0]),np.max(data[:, 0])))
+    print('Min/Max Y: {} {}'.format(np.min(data[:, 1]),np.max(data[:, 1])))
+    print('Min/Max Z: {} {}'.format(np.min(data[:, 2]),np.max(data[:, 2])))
+    print('Min/Max Mass: {} {}'.format(np.min(data[:, 3]),np.max(data[:, 3])))
+    print('Sample record: {}'.format(data[0, :]))
+    print('Number of records: {}'.format(len(tab)))
+    data.tofile(datafile.split('.')[0] + '.bin')
+
 
 
 
