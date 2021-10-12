@@ -42,7 +42,7 @@ class Slime(object):
 
     @classmethod
     def from_dir(cls,dirname,datafile='trace.bin',metafile='export_metadata.txt',
-                 type='trace',axes='xyz',with_velocity=False):
+                 type='trace',axes='xyz',with_velocity=False,dtype=np.float16):
         import pyslime.utils as pu
         if dirname[-1] == '/':
             dirname = dirname[:-1]
@@ -50,7 +50,7 @@ class Slime(object):
         rawmetadata = pu.parse_meta_file('{}{}{}'.format(dirname,'/',metafile),
                                       axes='xyz')
         sdata = pu.load_slime_data('{}{}{}'.format(dirname,'/', datafile),
-                                    griddims=rawmetadata['grid_res'],axes=axes,
+                                    griddims=rawmetadata['grid_res'],axes=axes,dtype=dtype,
                                    with_velocity=with_velocity)
         print(np.shape(sdata))
         ### Now grab metadata with proper ordering of axes
