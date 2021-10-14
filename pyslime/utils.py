@@ -300,7 +300,7 @@ def get_slime(smdir, datafile='trace.bin', axes='xyz', dtype=np.float16):
         dtype ([type], optional): np.float16 or 32. Defaults to np.float16.
 
     Returns:
-        [type]: [description]
+        slimeObj: the prepared slime object
     """
 
     bpslime = slime.Slime.from_dir(
