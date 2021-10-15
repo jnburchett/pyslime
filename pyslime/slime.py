@@ -128,12 +128,35 @@ class Slime(object):
 
         return toreturn
 
-    def standardize(self, mean=None, stddev=None):
-        randvals = self.random_sample(100000)
-        if mean is None:
-            mean = np.mean(randvals[~np.isneginf(randvals)])
-        if stddev is None:
-            stddev = np.std(randvals[~np.isneginf(randvals)], dtype=np.float32)
+    def standardize(self, mean=None, stddev=None, denscut=None):
+        """ Standardize the distribution by subtracting by the mean 
+        and divitding by the standard deviation of the distribuiton of
+        density. This assumes the density is already in log10 space. Can 
+        specify a density cut to ensure no bias due to empty space in 
+        the observed catalogs. 
+
+        Args:
+            mean (float, optional): specify a mean. Defaults to None.
+            stddev (float, optional): specify a std. Defaults to None.
+            denscut (float, optional): an upper limit on the density to
+                calculate the mean and std. Defaults to -9999.
+        """
+
+        randvals = self.random_sample(1000000)
+        if denscut is None:
+            if mean is None:
+                mean = np.mean(randvals[~np.isneginf(randvals)])
+            if stddev is None:
+                stddev = np.std(randvals[~np.isneginf(randvals)],
+                                dtype=np.float32)
+
+        else:
+            cut = randvals > denscut
+            mean = np.mean(randvals[cut])
+            stddev = np.std(randvals[cut])
+
+        print(mean, stddev)
+
         self.data = (self.data - mean) / stddev
 
     def random_sample(self, size=10000, velocities=False):
