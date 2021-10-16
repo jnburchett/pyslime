@@ -166,34 +166,16 @@ class Slime(object):
 
         return toreturn
 
-    def standardize(self, denscut=None):
-        """ Standardize the distribution by subtracting by the mean 
-        and divitding by the standard deviation of the distribuiton of
-        density. This assumes the density is already in log10 space. Can 
-        specify a density cut to ensure no bias due to empty space in 
-        the observed catalogs. 
+    def standardize(self, stretch: float, shift: float) -> None:
+        """Standardize the distribution via a linear transormation. The values 
+        of stretch and shift should be chosen based on an inspection of the data
 
         Args:
-            mean (float, optional): specify a mean. Defaults to None.
-            stddev (float, optional): specify a std. Defaults to None.
-            denscut (float, optional): an upper limit on the density to
-                calculate the mean and std. Defaults to -9999.
+            stretch (float): scale the width of the distribution
+            shift (float): move the distribution around
         """
-        from itertools import product
-        import scipy.stats
 
-        randvals = self.random_sample(1000000)
-        if denscut is None:
-            pass
-
-        else:
-            cut = randvals > denscut
-            mean = np.mean(randvals[cut])
-            stddev = np.std(randvals[cut])
-
-        print(mean, stddev)
-
-        self.data = (self.data - mean) / stddev
+        self.data = self.data * stretch + shift
 
     def random_sample(self, size=10000, velocities=False):
         import pyslime.utils as pu
