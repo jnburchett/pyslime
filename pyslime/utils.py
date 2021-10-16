@@ -17,15 +17,15 @@ def load_slime_data(datafile, griddims, dtype=np.float16, axes='xyz',
         yidx = axes.index('y')
         zidx = axes.index('z')
         print(np.shape(voxels), (xidx, yidx, zidx))
-        #idxarr = np.array([xidx,yidx,zidx])
-        #idxarr = np.roll(idxarr,2)
-        #voxels = np.transpose(voxels,[idxarr[0],idxarr[1],idxarr[2]])
+        # idxarr = np.array([xidx,yidx,zidx])
+        # idxarr = np.roll(idxarr,2)
+        # voxels = np.transpose(voxels,[idxarr[0],idxarr[1],idxarr[2]])
         if with_velocity:
             voxels = np.transpose(voxels, [zidx, yidx, xidx, 3])
-            #voxels = np.transpose(voxels, [2, 1, 0, 3])
+            # voxels = np.transpose(voxels, [2, 1, 0, 3])
         else:
             voxels = np.transpose(voxels, [zidx, yidx, xidx])
-            #voxels = np.transpose(voxels, [2, 1, 0])
+            # voxels = np.transpose(voxels, [2, 1, 0])
     return voxels
 
 
@@ -277,7 +277,7 @@ def pack_data_binary(datafile, racol='ra', deccol='dec', distcol='lumdist',
     except:
         import pdb
         pdb.set_trace()
-    #data = np.zeros((len(tab) - 1, 4), dtype=np.float32)
+    # data = np.zeros((len(tab) - 1, 4), dtype=np.float32)
 
     data = np.array([x, y, z, mass], dtype=np.float32).T
     print('Min/Max X: {} {}'.format(np.min(data[:, 0]), np.max(data[:, 0])))
@@ -289,23 +289,26 @@ def pack_data_binary(datafile, racol='ra', deccol='dec', distcol='lumdist',
     data.tofile(datafile.split('.')[0] + '.bin')
 
 
-def get_slime(smdir, datafile='trace.bin', axes='xyz', dtype=np.float16):
+def get_slime(smdir, datafile='trace.bin', axes='xyz', dtype=np.float16,
+              denscut=None, standardize=True) -> slime:
     """ This function prepares a raw slime fit for production of the catalog.
-    Primarily, we want to do log before we standardize. 
+        Primarily, we want to do log before we standardize.
 
-    Args:
-        smdir (str): path to slime directory
-        datafile (str, optional): name of the tace binary. Defaults to 'trace.bin'.
-        axes (str, optional): order of the axes. Defaults to 'xyz'.
-        dtype ([type], optional): np.float16 or 32. Defaults to np.float16.
+        Args:
+            smdir (str): path to slime directory
+            datafile (str, optional): name of the tace binary. Defaults to 'trace.bin'.
+            axes (str, optional): order of the axes. Defaults to 'xyz'.
+            dtype (np.dtype, optional): np.float16 or 32. Defaults to np.float16.
+            standardize (bool, optional): whether to standardize the slime objects data.
 
-    Returns:
-        slimeObj: the prepared slime object
-    """
+        Returns:
+            slimeObj: the prepared slime object
+        """
 
     bpslime = slime.Slime.from_dir(
         smdir, datafile=datafile, axes=axes, dtype=dtype)
     bpslime.data = bpslime.data.astype(np.float32)
     bpslime.data = np.log10(bpslime.data)
-    bpslime.standardize()
+    if standardize:
+        bpslime.standardize(denscut=denscut)
     return bpslime
