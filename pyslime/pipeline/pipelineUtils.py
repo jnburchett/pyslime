@@ -2,13 +2,12 @@ from pyslime import utils as pu
 import numpy as np
 from astropy.cosmology import Planck15 as cosmo
 import scipy.stats
-
+from itertools import product
 from pyslime.slime import Slime
-
-# Return index of array element closest to value
 
 
 def closest(arr, value):
+    # Return index of array element closest to value
     if isinstance(value, int) | isinstance(value, float):
         idx = (np.abs(arr - value)).argmin()
     else:
@@ -34,14 +33,14 @@ def bprho_dist_to_idx(x_dist, y_dist, z_dist, brick_size=1024):
     return x, y, z
 
 
-def get_sim_data(bpDensityFile: str) -> np.array:
+def get_sim_data(bpDensityFile: str) -> np.ndarray:
     """grab the Bolshoi-Planck simulation data
 
     Args:
         bpDensityFile (str): location of the BPdenisty binary file
 
     Returns:
-        np.array: log10 simulation density cube
+        np.ndarray: log10 simulation density cube
     """
     rho_m = np.fromfile(bpDensityFile, dtype=np.float64)
     rho_m = np.reshape(rho_m, (1024, 1024, 1024))
@@ -50,7 +49,7 @@ def get_sim_data(bpDensityFile: str) -> np.array:
 
 
 def sample_bins(
-    bpslime: Slime, logrhom: np.array, smrhobins: np.array, verbose: bool = True
+    bpslime: Slime, logrhom: np.ndarray, smrhobins: np.ndarray, verbose: bool = True
 ):
     """Sample the slime mold by binning in density. This allows us
     to look at every density regime in slime mold fits and find the
@@ -58,8 +57,8 @@ def sample_bins(
 
     Args:
         bpslime (Slime): SlimeObject that fits to the simulation
-        logrhom (np.array): BP simulation density cube
-        smrhobins (np.array): how to bin up the slime mold density
+        logrhom (np.ndarray): BP simulation density cube
+        smrhobins (np.ndarray): how to bin up the slime mold density
         verbose (bool, optional): print? Defaults to True.
 
     Returns:
@@ -152,27 +151,28 @@ def compute_bootstrap(bpdistribs_sm, bsmederrs_bp, bsmeanerrs_bp, i):
 
 
 def costfunc(
-    u_values: np.array,
-    v_values: np.array,
-    u_weights: np.array,
-    v_weights: np.array,
-    denscut: float,
+    u_values: np.ndarray,
+    v_values: np.ndarray,
+    u_weights: np.ndarray,
+    v_weights: np.ndarray,
+    denscut: float = 0.5,
 ) -> float:
     """Compute the cost function between two density distributions. 
     This method uses the Wasserstein distance between distributions U and V as 
     implemented by scipy.
 
     Args:
-        u_values (np.array): bin centers of the U histogram.
-        v_values (np.array): bin centers of the V histogram.
-        u_weights (np.array): number of objects in each bin for the U hist.
-        v_weights (np.array): number of objects in each bin for the V hist.
+        u_values (np.ndarray): bin centers of the U histogram.
+        v_values (np.ndarray): bin centers of the V histogram.
+        u_weights (np.ndarray): number of objects in each bin for the U hist.
+        v_weights (np.ndarray): number of objects in each bin for the V hist.
+        denscut (float): upper limit on density to ignore in fitting. 
 
     Returns:
         float: wasserstein cost
     """
-    # do a cut on the
-    denscut = v_values > 0.5
+    # do a cut on the data before computing cost
+    denscut = v_values > denscut
     v_weights_cut = v_weights[denscut]
     v_values_cut = v_values[denscut]
 
@@ -188,10 +188,11 @@ def costfunc(
 def objective_function(
     stretch: float,
     shift: float,
-    u_values: np.array,
-    v_values: np.array,
-    u_weights: np.array,
-    v_weights: np.array,
+    u_values: np.ndarray,
+    v_values: np.ndarray,
+    u_weights: np.ndarray,
+    v_weights: np.ndarray,
+    denscut: float = 0.5,
 ) -> float:
     """The objective function for the linear transformation of a distribution.
      newdist = stretch*dist + shift or y = mx + b
@@ -200,13 +201,47 @@ def objective_function(
     Args:
         stretch (float): scale the distribution.
         shift (float): bias the distribution.
-        u_values (np.array): bin centers of the U histogram.
-        v_values (np.array): bin centers of the V histogram.
-        u_weights (np.array): number of objects in each bin for the U hist.
-        v_weights (np.array): number of objects in each bin for the V hist.
+        u_values (np.ndarray): bin centers of the U histogram.
+        v_values (np.ndarray): bin centers of the V histogram.
+        u_weights (np.ndarray): number of objects in each bin for the U hist.
+        v_weights (np.ndarray): number of objects in each bin for the V hist.
+        denscut (float): upper limit on density to ignore in fitting. 
+
 
     Returns:
         float: [description]
     """
     new_vvaleus = stretch * v_values + shift
-    return costfunc(u_values, new_vvaleus, u_weights, v_weights)
+    return costfunc(u_values, new_vvaleus, u_weights, v_weights, denscut)
+
+
+def calc_stretch_shift(
+    uvalues_cut,
+    vvalues_cut,
+    uweights_cut,
+    vweights_cut,
+    stretchmin=0.1,
+    strectmax=3.0,
+    shiftmin=-2,
+    shiftmax=2,
+    denscut=0.5,
+):
+    stretch = np.geomspace(stretchmin, strectmax, 110)
+    shift = np.linspace(shiftmin, shiftmax, 120)
+
+    costarr = np.zeros((110, 120))
+    for p in product(enumerate(stretch), enumerate(shift)):
+        [i, stretchval], [j, shiftval] = p
+        f = objective_function(
+            stretchval,
+            shiftval,
+            uvalues_cut,
+            vvalues_cut,
+            uweights_cut,
+            vweights_cut,
+            denscut=denscut,
+        )
+        costarr[i, j] = f
+    # find the minimum
+    idx, jdx = np.where(costarr == costarr.min())
+    return stretch[idx], shift[jdx]
