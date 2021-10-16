@@ -1,6 +1,7 @@
 from pyslime import utils as pu
 import numpy as np
 from astropy.cosmology import Planck15 as cosmo
+import scipy.stats
 
 from pyslime.slime import Slime
 
@@ -8,24 +9,24 @@ from pyslime.slime import Slime
 
 
 def closest(arr, value):
-    if (isinstance(value, int) | isinstance(value, float)):
-        idx = (np.abs(arr-value)).argmin()
+    if isinstance(value, int) | isinstance(value, float):
+        idx = (np.abs(arr - value)).argmin()
     else:
         idx = []
         for val in value:
-            idx.append((np.abs(arr-val)).argmin())
+            idx.append((np.abs(arr - val)).argmin())
     return idx
 
 
 def bprho_idx_to_dist(xidx, yidx, zidx):
-    xycoords_rho = np.linspace(-125/cosmo.h, 125./cosmo.h, 1024)
-    zcoords_rho = np.linspace(0., 250./cosmo.h, 1024)
+    xycoords_rho = np.linspace(-125 / cosmo.h, 125.0 / cosmo.h, 1024)
+    zcoords_rho = np.linspace(0.0, 250.0 / cosmo.h, 1024)
     return xycoords_rho[xidx], xycoords_rho[yidx], zcoords_rho[zidx]
 
 
 def bprho_dist_to_idx(x_dist, y_dist, z_dist, brick_size=1024):
-    xycoords_rho = np.linspace(-125/cosmo.h, 125./cosmo.h, 1024)
-    zcoords_rho = np.linspace(0., 250./cosmo.h, 1024)
+    xycoords_rho = np.linspace(-125 / cosmo.h, 125.0 / cosmo.h, 1024)
+    zcoords_rho = np.linspace(0.0, 250.0 / cosmo.h, 1024)
     x = int(closest(xycoords_rho, x_dist))
     y = int(closest(xycoords_rho, y_dist))
     z = int(closest(zcoords_rho, z_dist))
@@ -48,8 +49,9 @@ def get_sim_data(bpDensityFile: str) -> np.array:
     return logrhom
 
 
-def sample_bins(bpslime: Slime, logrhom: np.array,
-                smrhobins: np.array, verbose: bool = True):
+def sample_bins(
+    bpslime: Slime, logrhom: np.array, smrhobins: np.array, verbose: bool = True
+):
     """Sample the slime mold by binning in density. This allows us
     to look at every density regime in slime mold fits and find the
     corresponding density in the simulation. 
@@ -69,8 +71,7 @@ def sample_bins(bpslime: Slime, logrhom: np.array,
     bpdistribs_sm = []
     for i, dv in enumerate(smrhobins):
         if dv != smrhobins[-1]:
-            these = np.where((bpslime.data > dv) & (
-                bpslime.data < smrhobins[i+1]))
+            these = np.where((bpslime.data > dv) & (bpslime.data < smrhobins[i + 1]))
         else:
             continue
         print(dv, len(these[0]))
@@ -83,11 +84,11 @@ def sample_bins(bpslime: Slime, logrhom: np.array,
             randidxsx, randidxsy, randidxsz = these
 
         xdist, ydist, zdist = pu.idx_to_cartesian(
-            randidxsx, randidxsy, randidxsz, slime=bpslime)
+            randidxsx, randidxsy, randidxsz, slime=bpslime
+        )
         bpdensvals = np.zeros(len(xdist))
         for j, xd in enumerate(xdist):
-            bpidx_x, bpidx_y, bpidx_z = bprho_dist_to_idx(
-                xd, ydist[j], zdist[j])
+            bpidx_x, bpidx_y, bpidx_z = bprho_dist_to_idx(xd, ydist[j], zdist[j])
             bpdensvals[j] = logrhom[bpidx_x, bpidx_y, bpidx_z]
         bpdistribs_sm.append(bpdensvals)
         smdistribs_sm.append(bpslime.data[randidxsx, randidxsy, randidxsz])
@@ -120,21 +121,92 @@ def distribution_stats(bpdistribs_sm: list, bootstrap: bool = False):
         stdvals_bp[i] = np.std(bpdistribs_sm[i][bpdistribs_sm[i] != 0])
         try:
             if bootstrap:
-                compute_bootstrap(bpdistribs_sm,
-                                  bsmederrs_bp, bsmeanerrs_bp, i)
+                compute_bootstrap(bpdistribs_sm, bsmederrs_bp, bsmeanerrs_bp, i)
 
-            loperc_bp[i] = np.percentile(bpdistribs_sm[i], 16.)
-            hiperc_bp[i] = np.percentile(bpdistribs_sm[i], 84.)
+            loperc_bp[i] = np.percentile(bpdistribs_sm[i], 16.0)
+            hiperc_bp[i] = np.percentile(bpdistribs_sm[i], 84.0)
         except:
             continue
     if bootstrap:
-        return medvals_bp, meanvals_bp, stdvals_bp, loperc_bp, hiperc_bp, bsmederrs_bp, bsmeanerrs_bp
+        return (
+            medvals_bp,
+            meanvals_bp,
+            stdvals_bp,
+            loperc_bp,
+            hiperc_bp,
+            bsmederrs_bp,
+            bsmeanerrs_bp,
+        )
     return medvals_bp, meanvals_bp, stdvals_bp, loperc_bp, hiperc_bp
 
 
 def compute_bootstrap(bpdistribs_sm, bsmederrs_bp, bsmeanerrs_bp, i):
     from astropy import stats as astats
-    bsmederrs_bp[i] = np.std(astats.bootstrap(
-        bpdistribs_sm[i], bootnum=500, bootfunc=np.median))
-    bsmeanerrs_bp[i] = np.std(astats.bootstrap(
-        bpdistribs_sm[i], bootnum=500, bootfunc=np.mean))
+
+    bsmederrs_bp[i] = np.std(
+        astats.bootstrap(bpdistribs_sm[i], bootnum=500, bootfunc=np.median)
+    )
+    bsmeanerrs_bp[i] = np.std(
+        astats.bootstrap(bpdistribs_sm[i], bootnum=500, bootfunc=np.mean)
+    )
+
+
+def costfunc(
+    u_values: np.array,
+    v_values: np.array,
+    u_weights: np.array,
+    v_weights: np.array,
+    denscut: float,
+) -> float:
+    """Compute the cost function between two density distributions. 
+    This method uses the Wasserstein distance between distributions U and V as 
+    implemented by scipy.
+
+    Args:
+        u_values (np.array): bin centers of the U histogram.
+        v_values (np.array): bin centers of the V histogram.
+        u_weights (np.array): number of objects in each bin for the U hist.
+        v_weights (np.array): number of objects in each bin for the V hist.
+
+    Returns:
+        float: wasserstein cost
+    """
+    # do a cut on the
+    denscut = v_values > 0.5
+    v_weights_cut = v_weights[denscut]
+    v_values_cut = v_values[denscut]
+
+    if len(v_values_cut) == 0:
+        return np.inf
+
+    cost = scipy.stats.wasserstein_distance(
+        u_values, v_values_cut, u_weights=u_weights, v_weights=v_weights_cut
+    )
+    return cost
+
+
+def objective_function(
+    stretch: float,
+    shift: float,
+    u_values: np.array,
+    v_values: np.array,
+    u_weights: np.array,
+    v_weights: np.array,
+) -> float:
+    """The objective function for the linear transformation of a distribution.
+     newdist = stretch*dist + shift or y = mx + b
+
+
+    Args:
+        stretch (float): scale the distribution.
+        shift (float): bias the distribution.
+        u_values (np.array): bin centers of the U histogram.
+        v_values (np.array): bin centers of the V histogram.
+        u_weights (np.array): number of objects in each bin for the U hist.
+        v_weights (np.array): number of objects in each bin for the V hist.
+
+    Returns:
+        float: [description]
+    """
+    new_vvaleus = stretch * v_values + shift
+    return costfunc(u_values, new_vvaleus, u_weights, v_weights)
