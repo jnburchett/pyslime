@@ -305,8 +305,9 @@ def get_slime(
     datafile="trace.bin",
     axes="xyz",
     dtype=np.float16,
-    denscut=None,
     standardize=True,
+    stretch=None,
+    shift=None,
 ) -> slime:
     """ This function prepares a raw slime fit for production of the catalog.
         Primarily, we want to do log before we standardize.
@@ -326,5 +327,8 @@ def get_slime(
     bpslime.data = bpslime.data.astype(np.float32)
     bpslime.data = np.log10(bpslime.data)
     if standardize:
-        bpslime.standardize(denscut=denscut)
+        if stretch or shift is None:
+            print("WARNING: Must provide a stretch and shift to standardize")
+        else:
+            bpslime.standardize(stretch=stretch, shift=shift)
     return bpslime
