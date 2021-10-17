@@ -4,6 +4,8 @@ from astropy.cosmology import Planck15 as cosmo
 import scipy.stats
 from itertools import product
 from pyslime.slime import Slime
+import os
+import pickle
 
 
 def closest(arr, value):
@@ -245,3 +247,55 @@ def calc_stretch_shift(
     # find the minimum
     idx, jdx = np.where(costarr == costarr.min())
     return stretch[idx], shift[jdx]
+
+
+def calc_map_bp_slime(bpDensityFile, bpslimedir, bpdatafile, out_pickle_file):
+
+    if os.path.exists(out_pickle_file):
+        # dont run this, its VERY slow.
+        print(
+            f"You already have a mapping pickle file with this name {out_pickle_file}. \
+        if you wish to run the mapping again, delete this file"
+        )
+    else:
+        # load data
+        logrhom = get_sim_data(bpDensityFile)
+        bpslime = pu.get_slime(
+            bpslimedir, datafile=bpdatafile, dtype=np.float32, standardize=False
+        )
+        # Sample the densites from the slime fit to the simulation and get
+        # the corresponding density from the simulation.
+        mindens = bpslime.data[~np.isinf(bpslime.data)].min() - 0.1
+        maxdens = bpslime.data.max() + 0.2
+        smrhobins = np.arange(mindens, maxdens, 0.1)
+        bpdistribs_sm, smdistribs_sm = sample_bins(bpslime, logrhom, smrhobins)
+
+        # Find the median and 1sigma std for each slime mold density bin
+        (
+            medvals_bp,
+            meanvals_bp,
+            stdvals_bp,
+            loperc_bp,
+            hiperc_bp,
+        ) = distribution_stats(bpdistribs_sm)
+
+        # pickle the results
+        packageDict_smBins = {
+            "medvals_bp": medvals_bp,
+            "meanvals_bp": meanvals_bp,
+            "loperc_bp": loperc_bp,
+            "hiperc_bp": hiperc_bp,
+            "bpdistribs_sm": bpdistribs_sm,
+            "smdistribs_sm": smdistribs_sm,
+            "smrhobins": smrhobins,
+        }
+        pickle.dump(packageDict_smBins, open(out_pickle_file, "wb"))
+
+        return None
+
+
+def interpolate():
+    # read in the mapping pickle file
+    smpackage = pickle.load(open("mapping_BP_z0p0_1sigma.pick", "rb"))
+    smrhobins = smpackage["smrhobins"]
+    pass
