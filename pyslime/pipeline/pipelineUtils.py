@@ -51,7 +51,11 @@ def get_sim_data(bpDensityFile: str) -> np.ndarray:
 
 
 def sample_bins(
-    bpslime: Slime, logrhom: np.ndarray, smrhobins: np.ndarray, verbose: bool = True
+    bpslime: Slime,
+    logrhom: np.ndarray,
+    smrhobins: np.ndarray,
+    verbose: bool = True,
+    size: int = 2000,
 ):
     """Sample the slime mold by binning in density. This allows us
     to look at every density regime in slime mold fits and find the
@@ -62,6 +66,7 @@ def sample_bins(
         logrhom (np.ndarray): BP simulation density cube
         smrhobins (np.ndarray): how to bin up the slime mold density
         verbose (bool, optional): print? Defaults to True.
+        size (int, optional): number of samples to take in each bin 
 
     Returns:
         List: bpdistribs_sm 
@@ -77,7 +82,7 @@ def sample_bins(
             continue
         print(dv, len(these[0]))
         try:
-            randidxs = np.random.randint(0, len(these[0]), size=2000)
+            randidxs = np.random.randint(0, len(these[0]), size=size)
             randidxsx = these[0][randidxs]
             randidxsy = these[1][randidxs]
             randidxsz = these[2][randidxs]
