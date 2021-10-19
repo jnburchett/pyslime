@@ -9,7 +9,16 @@ import pickle
 
 
 def closest(arr, value):
-    # Return index of array element closest to value
+    """Return index of array element closest to value. This is
+    very slow. Try find nearest. 
+
+    Args:
+        arr (np.ndarray): array you want to query from
+        value (float, np.ndarray): what you want to find in array.
+
+    Returns:
+        int: index where value is closest
+    """
     if isinstance(value, int) | isinstance(value, float):
         idx = (np.abs(arr - value)).argmin()
     else:
@@ -17,6 +26,24 @@ def closest(arr, value):
         for val in value:
             idx.append((np.abs(arr - val)).argmin())
     return idx
+
+
+def find_nearest(array, value):
+    """
+    Return index of array element closest to value. Will fail if
+    the value is larger than anything in the array. Much faster.
+
+    https://stackoverflow.com/questions/32446703/find-closest-vector-from-a-list-of-vectors-python
+    Args:
+        array (np.ndarray): array you want to query from
+        value (float, np.ndarray): what you want to find in array.
+
+    Returns:
+        int: index where value is closest
+    """
+    idx = np.searchsorted(array, value, side="left")
+    idx = idx - (np.abs(value - array[idx - 1]) < np.abs(value - array[idx]))
+    return idx.astype(np.int32)
 
 
 def bprho_idx_to_dist(xidx, yidx, zidx):
@@ -27,10 +54,10 @@ def bprho_idx_to_dist(xidx, yidx, zidx):
 
 def bprho_dist_to_idx(x_dist, y_dist, z_dist, brick_size=1024):
     xycoords_rho = np.linspace(-125 / cosmo.h, 125.0 / cosmo.h, 1024)
-    zcoords_rho = np.linspace(0.0, 250.0 / cosmo.h, 1024)
-    x = int(closest(xycoords_rho, x_dist))
-    y = int(closest(xycoords_rho, y_dist))
-    z = int(closest(zcoords_rho, z_dist))
+    zcoords_rho = np.linspace(0.0, 250.0 / cosmo.h, brick_size)
+    x = find_nearest(xycoords_rho, x_dist)
+    y = find_nearest(xycoords_rho, y_dist)
+    z = find_nearest(zcoords_rho, z_dist)
 
     return x, y, z
 
@@ -93,9 +120,8 @@ def sample_bins(
             randidxsx, randidxsy, randidxsz, slime=bpslime
         )
         bpdensvals = np.zeros(len(xdist))
-        for j, xd in enumerate(xdist):
-            bpidx_x, bpidx_y, bpidx_z = bprho_dist_to_idx(xd, ydist[j], zdist[j])
-            bpdensvals[j] = logrhom[bpidx_x, bpidx_y, bpidx_z]
+        bpidx_x, bpidx_y, bpidx_z = bprho_dist_to_idx(xdist, ydist, zdist)
+        bpdensvals = logrhom[bpidx_x, bpidx_y, bpidx_z]
         bpdistribs_sm.append(bpdensvals)
         smdistribs_sm.append(bpslime.data[randidxsx, randidxsy, randidxsz])
 
