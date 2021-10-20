@@ -307,7 +307,7 @@ def calc_stretch_shift(
     vvalues = 0.5 * vvalues_edges[:-1] + 0.5 * vvalues_edges[1:]
 
     # since we are fixing the bp (u_values)
-    denscut = uvalues > dens_threshold
+    denscut = uvalues > -10
     uweights_cut = uweights[denscut]
     uvalues_cut = uvalues[denscut]
 
