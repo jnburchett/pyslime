@@ -249,6 +249,89 @@ def objective_function(
 
 
 def calc_stretch_shift(
+    bpslime_dir: str,
+    survey_slime_dir: str,
+    dens_threshold: float = 0.5,
+    bpslime_datafile: str = "trace.bin",
+    survey_datafile: str = "trace.bin",
+    stretchmin: float = 0.1,
+    strectmax: float = 3.0,
+    shiftmin: float = -2,
+    shiftmax: float = 2,
+) -> tuple:
+    """The function estimates the optimal linear operator that aligns the two
+    empirical distributions. It can funciton on only a portion
+    of the distributions. V is the source distribution, U is the target 
+    distribution. Uses the wasserstein distance to estimate the a cost function
+    and finds the optimal solution. 
+    
+
+    .. math::
+        y(x)=Ax+b
+
+    where :
+        A is the stretch
+        b is the shift, or bias
+
+    Args:
+        bpslime_dir (str): path to the fit to the bp slime
+        survey_slime_dir (str): path to the fit to the survey, sdss or LRG
+        dens_threshold (float, optional): ignore densities below this. Defaults to 0.5.
+        bpslime_datafile (str, optional): bp binary datafile. Defaults to "trace.bin".
+        survey_datafile (str, optional): survey binary datafile. Defaults to "trace.bin".
+        stretchmin (float, optional): lower bound on stretch. Defaults to 0.1.
+        strectmax (float, optional): upper bound on stretch. Defaults to 3.0.
+        shiftmin (float, optional): lower bound on shift. Defaults to -2.
+        shiftmax (float, optional): upper bound on shift. Defaults to 2.
+
+    Returns:
+        tuple: (stretch, shift)
+    """
+
+    # load the bp fit and survey data
+    survey_slime = pu.get_slime(
+        survey_slime_dir, datafile=survey_datafile, dtype=np.float32, standardize=False
+    )
+    bpslime = pu.get_slime(
+        bpslime_dir, datafile=bpslime_datafile, dtype=np.float32, standardize=False
+    )
+
+    flatbpslime = bpslime.data.flatten()
+    flatsdssslime = survey_slime.data.flatten()
+    bins = np.linspace(-5, 5, 1000)
+    uweights, uvalues_edges = np.histogram(flatbpslime, bins=bins)
+    vweights, vvalues_edges = np.histogram(flatsdssslime, bins=bins)
+
+    # find the centers of the bins
+    uvalues = 0.5 * uvalues_edges[:-1] + 0.5 * uvalues_edges[1:]
+    vvalues = 0.5 * vvalues_edges[:-1] + 0.5 * vvalues_edges[1:]
+
+    # since we are fixing the bp (u_values)
+    denscut = uvalues > dens_threshold
+    uweights_cut = uweights[denscut]
+    uvalues_cut = uvalues[denscut]
+
+    # take all of the bpdata
+    vdenscut = vvalues > dens_threshold
+    vweights_cut = vweights[vdenscut]
+    vvalues_cut = vvalues[vdenscut]
+
+    stretch, shift = _calc_stretch_shift(
+        uvalues_cut,
+        vvalues_cut,
+        uweights_cut,
+        vweights_cut,
+        stretchmin=stretchmin,
+        strectmax=strectmax,
+        shiftmin=shiftmin,
+        shiftmax=shiftmax,
+        denscut=dens_threshold,
+    )
+
+    return stretch, shift
+
+
+def _calc_stretch_shift(
     uvalues_cut,
     vvalues_cut,
     uweights_cut,
