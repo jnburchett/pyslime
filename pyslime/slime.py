@@ -174,8 +174,8 @@ class Slime(object):
             stretch (float): scale the width of the distribution
             shift (float): move the distribution around
         """
-
-        self.data = self.data * stretch + shift
+        new_distribution = self.data * stretch + shift
+        self.data = new_distribution
 
     def random_sample(self, size=10000, velocities=False):
         import pyslime.utils as pu

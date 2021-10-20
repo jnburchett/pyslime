@@ -327,7 +327,7 @@ def get_slime(
     bpslime.data = bpslime.data.astype(np.float32)
     bpslime.data = np.log10(bpslime.data)
     if standardize:
-        if stretch or shift is None:
+        if stretch is None or shift is None:
             print("WARNING: Must provide a stretch and shift to standardize")
         else:
             bpslime.standardize(stretch=stretch, shift=shift)
