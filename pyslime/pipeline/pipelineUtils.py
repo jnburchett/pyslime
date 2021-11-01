@@ -225,7 +225,7 @@ def objective_function(
     v_values: np.ndarray,
     u_weights: np.ndarray,
     v_weights: np.ndarray,
-    denscut: float = 0.5,
+    denscut: float,
 ) -> float:
     """The objective function for the linear transformation of a distribution.
      newdist = stretch*dist + shift or y = mx + b
