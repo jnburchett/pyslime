@@ -45,8 +45,8 @@ def parser(options=None):
 
 
 def dens_plot(
-    sdss_slime_dir: str,
-    sdss_datafile: str = "trace.bin",
+    slime_dir: str,
+    datafile: str = "trace.bin",
     dtype=np.float32,
     standardize=False,
     xmin=-0.5,
@@ -54,10 +54,10 @@ def dens_plot(
     nbins=1000,
 ):
     sdss_slime32 = pu.get_slime(
-        sdss_slime_dir, datafile=sdss_datafile, dtype=dtype, standardize=standardize
+        slime_dir, datafile=datafile, dtype=dtype, standardize=standardize
     )
     # flatten for histogram
-    flatsdssslime = sdss_slime32.flatten()
+    flatsdssslime = sdss_slime32.data.flatten()
 
     bins = np.linspace(xmin, xmax, nbins)
     kwargs = {"bins": bins, "histtype": "step", "density": True}
@@ -72,7 +72,7 @@ def main(args):
     datafile = args.datafile
     xmin = args.xmin
     xmax = args.xmax
-    dens_plot(sdss_slime_dir=slime_dir, datafile=datafile, xmin=xmin, xmax=xmax)
+    dens_plot(slime_dir=slime_dir, datafile=datafile, xmin=xmin, xmax=xmax)
 
 
 if __name__ == "__main__":
