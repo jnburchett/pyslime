@@ -6,8 +6,11 @@ from itertools import product
 from pyslime.slime import Slime
 import os
 import pickle
+from jax import jit, vmap
+import jax.numpy as jnp
 
 
+@jit
 def closest(arr, value):
     """Return index of array element closest to value. This is
     very slow. Try find nearest. 
@@ -28,6 +31,7 @@ def closest(arr, value):
     return idx
 
 
+@jit
 def find_nearest(array, value):
     """
     Return index of array element closest to value. Will fail if
@@ -41,8 +45,8 @@ def find_nearest(array, value):
     Returns:
         int: index where value is closest
     """
-    idx = np.searchsorted(array, value, side="left")
-    idx = idx - (np.abs(value - array[idx - 1]) < np.abs(value - array[idx]))
+    idx = jnp.searchsorted(array, value, side="left")
+    idx = idx - (jnp.abs(value - array[idx - 1]) < jnp.abs(value - array[idx]))
     return idx.astype(np.int32)
 
 
@@ -77,6 +81,7 @@ def get_sim_data(bpDensityFile: str) -> np.ndarray:
     return logrhom
 
 
+@jit
 def sample_bins(
     bpslime: Slime,
     logrhom: np.ndarray,
@@ -126,6 +131,24 @@ def sample_bins(
         smdistribs_sm.append(bpslime.data[randidxsx, randidxsy, randidxsz])
 
     return bpdistribs_sm, smdistribs_sm
+
+
+def vmap_sample_bins(
+    bpslime: Slime,
+    logrhom: np.ndarray,
+    smrhobins: np.ndarray,
+    verbose: bool = True,
+    size: int = 2000,
+):
+    return vmap(
+        sample_bins(
+            bpslime=bpslime,
+            logrhom=logrhom,
+            smrhobins=smrhobins,
+            verbose=True,
+            size=size,
+        )
+    )
 
 
 def distribution_stats(bpdistribs_sm: list, bootstrap: bool = False):
@@ -363,6 +386,7 @@ def _calc_stretch_shift(
     return stretch[idx], shift[jdx]
 
 
+@jit
 def calc_map_bp_slime(bpDensityFile, bpslimedir, bpdatafile, out_pickle_file):
 
     if os.path.exists(out_pickle_file):
@@ -382,7 +406,7 @@ def calc_map_bp_slime(bpDensityFile, bpslimedir, bpdatafile, out_pickle_file):
         mindens = bpslime.data[~np.isinf(bpslime.data)].min() - 0.1
         maxdens = bpslime.data.max() + 0.2
         smrhobins = np.arange(mindens, maxdens, 0.1)
-        bpdistribs_sm, smdistribs_sm = sample_bins(bpslime, logrhom, smrhobins)
+        bpdistribs_sm, smdistribs_sm = vmap_sample_bins(bpslime, logrhom, smrhobins)
 
         # Find the median and 1sigma std for each slime mold density bin
         (
