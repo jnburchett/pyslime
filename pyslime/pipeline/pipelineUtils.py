@@ -432,8 +432,30 @@ def calc_map_bp_slime(bpDensityFile, bpslimedir, bpdatafile, out_pickle_file):
         return None
 
 
-def interpolate():
+@jit
+def get_hist(data: jnp.DeviceArray, bins: jnp.DeviceArray):
+    weights, values_edges = jnp.histogram(data, bins=bins, density=True)
+    values = 0.5 * values_edges[:-1] + 0.5 * values_edges[1:]
+    return weights, values
+
+
+def interpolate(mapping_data_pickle_file, mapfunc_pickle_file):
+    """Fits a univeriate spline to data to create a function
+    to map the slime density to cosmic overdenstiy.
+
+    Args:
+        mapping_data_pickle_file (str): location of the mapping binned pickle
+        mapfunc_pickle_file ([type]): location to put mapfunc pickle
+    """
+    from scipy.interpolate import InterpolatedUnivariateSpline
+
     # read in the mapping pickle file
-    smpackage = pickle.load(open("mapping_BP_z0p0_1sigma.pick", "rb"))
+    smpackage = pickle.load(open(mapping_data_pickle_file, "rb"))
     smrhobins = smpackage["smrhobins"]
-    pass
+    midbins = 0.5 * smrhobins[:-1] + 0.5 * smrhobins[1:]
+    nonan = ~np.isnan(smpackage["medvals_bp"])
+    mapfunc = InterpolatedUnivariateSpline(
+        midbins[nonan], smpackage["medvals_bp"][nonan], k=1
+    )
+    pickle.dump(mapfunc, open(mapfunc_pickle_file, "wb"))
+

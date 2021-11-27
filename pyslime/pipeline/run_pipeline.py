@@ -15,7 +15,7 @@ bpDensityFile_z0p5 = dropboxdir + "BP_0170_densities_1024_0.bin"
 
 # slime fit to the BP simulations
 bpslimedir = datadir + "BP_z=0.0"
-bpdatafile = "trace.bin"
+bpslime_datafile = "trace.bin"
 
 out_pickle_file_z0p0 = (
     packagedir + "pyslime/pyslime/pipeline/data/mapping_BP_z0p0_1sigma.pick"
@@ -26,12 +26,26 @@ out_pickle_file_z0p5 = (
 )
 if not os.path.exists(out_pickle_file_z0p0):
     ppu.calc_map_bp_slime(
-        bpDensityFile_z0p0, bpslimedir, bpdatafile, out_pickle_file_z0p0
+        bpDensityFile_z0p0, bpslimedir, bpslime_datafile, out_pickle_file_z0p0
     )
 if not os.path.exists(out_pickle_file_z0p5):
     ppu.calc_map_bp_slime(
-        bpDensityFile_z0p5, bpslimedir, bpdatafile, out_pickle_file_z0p5
+        bpDensityFile_z0p5, bpslimedir, bpslime_datafile, out_pickle_file_z0p5
     )
 
 # STEP 2: Interpolate the mapping to create a function
+mapfunc_pickle_file_z0p0 = (
+    packagedir + "pyslime/pyslime/pipeline/data/mapfunc_z0p0.pickle"
+)
 
+mapfunc_pickle_file_z0p5 = (
+    packagedir + "pyslime/pyslime/pipeline/data/mapfunc_z0p5.pickle"
+)
+
+if not os.path.exists(mapfunc_pickle_file_z0p0):
+    ppu.interpolate(out_pickle_file_z0p0, mapfunc_pickle_file_z0p0)
+
+if not os.path.exists(mapfunc_pickle_file_z0p5):
+    ppu.interpolate(out_pickle_file_z0p5, mapfunc_pickle_file_z0p5)
+
+# STEP 3: linear transform each survey data set
