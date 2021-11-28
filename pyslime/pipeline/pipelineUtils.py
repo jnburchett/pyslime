@@ -6,11 +6,11 @@ from itertools import product
 from pyslime.slime import Slime
 import os
 import pickle
-from jax import jit, vmap
-import jax.numpy as jnp
+
+# from jax import jit, vmap
+# import jax.numpy as np
 
 
-@jit
 def closest(arr, value):
     """Return index of array element closest to value. This is
     very slow. Try find nearest. 
@@ -31,7 +31,6 @@ def closest(arr, value):
     return idx
 
 
-@jit
 def find_nearest(array, value):
     """
     Return index of array element closest to value. Will fail if
@@ -45,8 +44,8 @@ def find_nearest(array, value):
     Returns:
         int: index where value is closest
     """
-    idx = jnp.searchsorted(array, value, side="left")
-    idx = idx - (jnp.abs(value - array[idx - 1]) < jnp.abs(value - array[idx]))
+    idx = np.searchsorted(array, value, side="left")
+    idx = idx - (np.abs(value - array[idx - 1]) < np.abs(value - array[idx]))
     return idx.astype(np.int32)
 
 
@@ -81,7 +80,6 @@ def get_sim_data(bpDensityFile: str) -> np.ndarray:
     return logrhom
 
 
-@jit
 def sample_bins(
     bpslime: Slime,
     logrhom: np.ndarray,
@@ -140,14 +138,8 @@ def vmap_sample_bins(
     verbose: bool = True,
     size: int = 2000,
 ):
-    return vmap(
-        sample_bins(
-            bpslime=bpslime,
-            logrhom=logrhom,
-            smrhobins=smrhobins,
-            verbose=True,
-            size=size,
-        )
+    return sample_bins(
+        bpslime=bpslime, logrhom=logrhom, smrhobins=smrhobins, verbose=True, size=size
     )
 
 
@@ -386,7 +378,6 @@ def _calc_stretch_shift(
     return stretch[idx], shift[jdx]
 
 
-@jit
 def calc_map_bp_slime(bpDensityFile, bpslimedir, bpdatafile, out_pickle_file):
 
     if os.path.exists(out_pickle_file):
@@ -432,9 +423,8 @@ def calc_map_bp_slime(bpDensityFile, bpslimedir, bpdatafile, out_pickle_file):
         return None
 
 
-@jit
-def get_hist(data: jnp.DeviceArray, bins: jnp.DeviceArray):
-    weights, values_edges = jnp.histogram(data, bins=bins, density=True)
+def get_hist(data, bins):
+    weights, values_edges = np.histogram(data, bins=bins, density=True)
     values = 0.5 * values_edges[:-1] + 0.5 * values_edges[1:]
     return weights, values
 

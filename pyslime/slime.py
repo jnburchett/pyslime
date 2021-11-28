@@ -58,7 +58,7 @@ class Slime(object):
         type="trace",
         axes="xyz",
         with_velocity=False,
-        dtype=np.float16,
+        dtype=np.float32,
     ):
         import pyslime.utils as pu
 

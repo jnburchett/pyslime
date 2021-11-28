@@ -1,8 +1,9 @@
 import numpy as np
 from astropy.cosmology import Planck15
 from pyslime import slime
-import jax.numpy as jnp
-from jax import jit, vmap
+
+# import jax.numpy as np
+# from jax import jit, vmap
 
 
 def load_slime_data(
@@ -170,7 +171,6 @@ def parse_meta_line_val(metaline, return_units=True, return_str=False):
         return val
 
 
-@jit
 def transform_to_cartesian(ra, dec, redshift, use_lumdist=True, cosmo=None):
     """Transform sky coordinates to Cartesian coordinates using the luminosity
     distance as z-coordinate
@@ -200,13 +200,12 @@ def transform_to_cartesian(ra, dec, redshift, use_lumdist=True, cosmo=None):
         radial = cosmo.luminosity_distance(redshift).to(u.Mpc).value
     else:
         radial = redshift
-    x = radial * jnp.sin(polar) * np.cos(azimuth)
-    z = radial * jnp.cos(polar)
-    y = radial * jnp.sin(polar) * np.sin(azimuth)
+    x = radial * np.sin(polar) * np.cos(azimuth)
+    z = radial * np.cos(polar)
+    y = radial * np.sin(polar) * np.sin(azimuth)
     return x, y, z
 
 
-@jit
 def idx_to_cartesian(
     i,
     j,
@@ -218,9 +217,9 @@ def idx_to_cartesian(
 ):
 
     if slime is None:
-        griddims = jnp.array(griddims)
-        minvals = jnp.array(minvals)
-        maxvals = jnp.array(maxvals)
+        griddims = np.array(griddims)
+        minvals = np.array(minvals)
+        maxvals = np.array(maxvals)
     else:
         griddims = slime.griddims
         minvals = slime.mincoords
@@ -246,14 +245,13 @@ def check_unit(unit):
     return unit
 
 
-@jit
 def cartesian_to_sky(x, y, z, cosmo=Planck15, return_redshift=True):
     from astropy.cosmology import z_at_value
     from astropy import units as u
 
-    ra = jnp.arctan2(y, x) * 180.0 / np.pi
-    dist = jnp.sqrt(x ** 2 + y ** 2 + z ** 2)
-    dec = 90.0 - jnp.arccos(z / dist) / np.pi * 180.0
+    ra = np.arctan2(y, x) * 180.0 / np.pi
+    dist = np.sqrt(x ** 2 + y ** 2 + z ** 2)
+    dec = 90.0 - np.arccos(z / dist) / np.pi * 180.0
     if return_redshift:
         try:
             redshift = z_at_value(cosmo.luminosity_distance, dist * u.Mpc)
@@ -309,7 +307,7 @@ def get_slime(
     smdir,
     datafile="trace.bin",
     axes="xyz",
-    dtype=jnp.float32,
+    dtype=np.float32,
     standardize=True,
     stretch=None,
     shift=None,
@@ -330,7 +328,7 @@ def get_slime(
 
     bpslime = slime.Slime.from_dir(smdir, datafile=datafile, axes=axes, dtype=dtype)
     # bpslime.data = bpslime.data.astype(dtype)
-    bpslime.data = vmap(jnp.log10)(bpslime.data)
+    bpslime.data = np.log10(bpslime.data)
     if standardize:
         if stretch is None or shift is None:
             print("WARNING: Must provide a stretch and shift to standardize")
