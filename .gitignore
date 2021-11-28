@@ -56,3 +56,8 @@ tmp.*
 
 # dask
 dask-worker-space
+
+# data
+*.npz
+*.csv
+*.pick*
