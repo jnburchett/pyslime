@@ -48,4 +48,9 @@ if not os.path.exists(mapfunc_pickle_file_z0p0):
 if not os.path.exists(mapfunc_pickle_file_z0p5):
     ppu.interpolate(out_pickle_file_z0p5, mapfunc_pickle_file_z0p5)
 
-# STEP 3: linear transform each survey data set
+# STEP 3: standardize with linear transforms
+# see the standardize generic notebook
+# need the .npz files created in get_distributions.ipynb
+
+# STEP 4:
+
