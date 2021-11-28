@@ -6,6 +6,8 @@ from itertools import product
 from pyslime.slime import Slime
 import os
 import pickle
+import glob
+import pandas as pd
 
 # from jax import jit, vmap
 # import jax.numpy as np
@@ -423,7 +425,7 @@ def calc_map_bp_slime(bpDensityFile, bpslimedir, bpdatafile, out_pickle_file):
         return None
 
 
-def get_hist(data, bins):
+def _get_hist(data, bins):
     weights, values_edges = np.histogram(data, bins=bins, density=True)
     values = 0.5 * values_edges[:-1] + 0.5 * values_edges[1:]
     return weights, values
@@ -448,4 +450,85 @@ def interpolate(mapping_data_pickle_file, mapfunc_pickle_file):
         midbins[nonan], smpackage["medvals_bp"][nonan], k=1
     )
     pickle.dump(mapfunc, open(mapfunc_pickle_file, "wb"))
+
+
+def get_datafolders(datadir):
+    everything = glob.glob(datadir + "*")
+    datafolders = [f for f in everything if ".zip" not in f]
+    return datafolders
+
+
+def get_hist(file):
+    slime = pu.get_slime(file, dtype=np.float32, standardize=False)
+    slimedata = slime.data.ravel()
+    bpmin = slimedata[~np.isinf(slimedata)].min()
+    bins = np.linspace(bpmin, np.max(slimedata), 10000)
+    uweights, uvalues = get_hist(slimedata, bins=bins)
+    return uweights, uvalues
+
+
+def make_distribution_files(datadir, packagedir):
+    """ Since the slime fit files are huge and slow, 
+    extract their distributions to make it easer to linear transform
+    them.
+
+    Args:
+        datafolders (str): path to data folders
+        packagedir (str): where to store the distribution numpy files
+    """
+    datafolders = get_datafolders(datadir)
+
+    for file in datafolders:
+        name = file.replace("=", "_")
+        name = name.replace(".", "_")
+        name = name[57:]
+        y = name + "_weights"
+        x = name + "_values"
+        outfilename = packagedir + name + "_dist.npz"
+        if not os.path.exists(outfilename):
+            print(f"working on {name}")
+            w, v = get_hist(file)
+            print(f"writing {outfilename}")
+
+            np.savez(outfilename, w, v)
+        else:
+            print(f"{outfilename} already exists")
+
+
+def calc_stretch_shift_df(distlist, plot=True):
+
+    bpdata = np.load(distlist[0])
+    uweight = bpdata["arr_0"]
+    uvalues = bpdata["arr_1"]
+    if plot:
+        import matplotlib.pyplot as plt
+
+        plt.plot(uvalues, uweight, label=distlist[0][51:])
+
+    lintransform_list = []
+    for file in distlist[1:]:
+        data = np.load(file)
+        w = data["arr_0"]
+        v = data["arr_1"]
+        name = file[51:]
+        stretch, shift = _calc_stretch_shift(
+            uvalues,
+            v,
+            uweight,
+            w,
+            stretchmin=0.5,
+            strectmax=1,
+            shiftmin=-1,
+            shiftmax=1,
+            denscut=-10,
+        )
+        savedict = {"name": name, "stretch": stretch[0], "shift": shift[0]}
+        lintransform_list.append(savedict)
+        if plot:
+            plt.plot(v * stretch + shift, w, label=name)
+    if plot:
+        plt.legend(bbox_to_anchor=(1.1, 1.05))
+        plt.show()
+    df = pd.DataFrame(lintransform_list)
+    return df
 
