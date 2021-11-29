@@ -309,6 +309,7 @@ def get_slime(
     axes="xyz",
     dtype=np.float32,
     standardize=True,
+    custom=False,
     stretch=None,
     shift=None,
 ) -> slime:
@@ -326,12 +327,14 @@ def get_slime(
             slimeObj: the prepared slime object
         """
 
-    bpslime = slime.Slime.from_dir(smdir, datafile=datafile, axes=axes, dtype=dtype)
-    # bpslime.data = bpslime.data.astype(dtype)
-    bpslime.data = np.log10(bpslime.data)
+    slimeobj = slime.Slime.from_dir(smdir, datafile=datafile, axes=axes, dtype=dtype)
+    slimeobj.data = np.log10(slimeobj.data)
     if standardize:
-        if stretch is None or shift is None:
-            print("WARNING: Must provide a stretch and shift to standardize")
+        if custom:
+            if stretch is None or shift is None:
+                print(
+                    "WARNING: Must provide a stretch and shift to standardize if custom is True"
+                )
         else:
-            bpslime.standardize(stretch=stretch, shift=shift)
-    return bpslime
+            slimeobj.standardize(custom=custom, stretch=stretch, shift=shift)
+    return slimeobj
