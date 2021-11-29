@@ -92,6 +92,44 @@ class Slime(object):
         )
         return slimeobj
 
+    @classmethod
+    def get_slime(
+        self,
+        smdir,
+        datafile="trace.bin",
+        axes="xyz",
+        dtype=np.float32,
+        standardize=True,
+        custom=False,
+        stretch=None,
+        shift=None,
+    ):
+        """ This function prepares a raw slime fit for production of the catalog.
+            Primarily, we want to do log before we standardize.
+
+            Args:
+                smdir (str): path to slime directory
+                datafile (str, optional): name of the tace binary. Defaults to 'trace.bin'.
+                axes (str, optional): order of the axes. Defaults to 'xyz'.
+                dtype (np.dtype, optional): np.float16 or 32. Defaults to np.float16.
+                standardize (bool, optional): whether to standardize the slime objects data.
+
+            Returns:
+                slimeObj: the prepared slime object
+            """
+
+        slimeobj = self.from_dir(smdir, datafile=datafile, axes=axes, dtype=dtype)
+        slimeobj.data = np.log10(slimeobj.data)
+        if standardize:
+            if custom:
+                if stretch is None or shift is None:
+                    print(
+                        "WARNING: Must provide a stretch and shift to standardize if custom is True"
+                    )
+            else:
+                slimeobj.standardize(custom=custom, stretch=stretch, shift=shift)
+        return slimeobj
+
     def cartesian_to_idx(self, x, y, z):
         """Transform coordinates from physical space to corresponding indices
         in model data grid
@@ -166,14 +204,32 @@ class Slime(object):
 
         return toreturn
 
-    def standardize(self, stretch: float, shift: float) -> None:
+    def standardize(
+        self, custom: bool = False, stretch: float = 1.0, shift: float = 0.0
+    ) -> None:
         """Standardize the distribution via a linear transormation. The values 
-        of stretch and shift should be chosen based on an inspection of the data
+        of stretch and shift should be chosen based on an inspection of the data.
+        The best values are stored in a csv file in pyslime.data and will be
+        chosen form there unless custom is set to true
 
         Args:
-            stretch (float): scale the width of the distribution
-            shift (float): move the distribution around
+            custom (bool, optional): [description]. Defaults to False.
+            stretch (float, optional): [description]. Defaults to 1.0.
+            shift (float, optional): [description]. Defaults to 0.0.
         """
+        if not custom:
+            import pandas as pd
+            import importlib.resources
+            from pyslime import data
+
+            with importlib.resources.path(data, "transform_table.csv") as p:
+                df = pd.read_csv(p, index_col=0)
+
+            nameidx = self.name.rfind("/") + 1
+            name = self.name[nameidx:]
+            stretch = df.loc[df.name == name]["stretch"].values[0]
+            shift = df.loc[df.name == name]["shift"].values[0]
+
         new_distribution = self.data * stretch + shift
         self.data = new_distribution
 
