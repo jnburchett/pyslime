@@ -33,6 +33,7 @@ setup_keywords[
 # setup_keywords["packages"] = find_packages("pyslime")
 setup_keywords["packages"] = find_packages()
 
+
 setup_keywords["long_description"] = ""
 if os.path.exists("README.md"):
     with open("README.md") as readme:
@@ -52,9 +53,13 @@ for path, directories, files in data_generator:
         data_files.append(data_path + "/" + f)
 setup_keywords["package_data"] = {
     "pyslime": data_files,
-    "": ["*.rst", "*.txt", "*.yaml"],
+    "": ["*.rst", "*.txt", "*.yaml", "*.csv"],
 }
+
 setup_keywords["include_package_data"] = True
+setup_keywords["zip_safe"] = True
+
+breakpoint()
 
 setup(**setup_keywords)
 
