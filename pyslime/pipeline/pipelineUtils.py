@@ -463,7 +463,7 @@ def get_hist(file):
     slimedata = slime.data.ravel()
     bpmin = slimedata[~np.isinf(slimedata)].min()
     bins = np.linspace(bpmin, np.max(slimedata), 10000)
-    uweights, uvalues = get_hist(slimedata, bins=bins)
+    uweights, uvalues = _get_hist(slimedata, bins=bins)
     return uweights, uvalues
 
 
@@ -479,11 +479,9 @@ def make_distribution_files(datadir, packagedir):
     datafolders = get_datafolders(datadir)
 
     for file in datafolders:
-        name = file.replace("=", "_")
-        name = name.replace(".", "_")
-        name = name[57:]
-        y = name + "_weights"
-        x = name + "_values"
+        # name = file.replace("=", "_")
+        # name = name.replace(".", "_")
+        name = file[57:]
         outfilename = packagedir + name + "_dist.npz"
         if not os.path.exists(outfilename):
             print(f"working on {name}")
@@ -522,7 +520,11 @@ def calc_stretch_shift_df(distlist, plot=True):
             shiftmax=1,
             denscut=-10,
         )
-        savedict = {"name": name, "stretch": stretch[0], "shift": shift[0]}
+        savedict = {
+            "name": name.strip("_dist.npz"),
+            "stretch": stretch[0],
+            "shift": shift[0],
+        }
         lintransform_list.append(savedict)
         if plot:
             plt.plot(v * stretch + shift, w, label=name)

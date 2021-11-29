@@ -4,11 +4,13 @@ import glob
 import pandas as pd
 
 from pyslime.pipeline import pipelineUtils as ppu
+from importlib.resources import path
 
 # All the data live here (except the simulation binaries):
 datadir = "/Volumes/GoogleDrive/My Drive/SlimeMold/2021-11-23-VACv2/"
 dropboxdir = "/Users/mwilde/Dropbox/slime-mold/data/final_data/"
 packagedir = "/Users/mwilde/python/pyslime/pyslime/pipeline/data/"
+otherdatadir = "/Users/mwilde/python/pyslime/pyslime/data/"
 
 ### STEP 1: Compute the mapping from the BP simulation to the SlimeMold
 # DM denstiy from the simulations
@@ -52,25 +54,25 @@ ppu.make_distribution_files(datadir, packagedir)
 # see the standardize_generic.ipynb notebook
 # need to manually be putinto low and hiz groups
 
-
-if not os.path.exists(packagedir + "transform_table_all.csv"):
+if not os.path.exists(otherdatadir + "transform_table.csv"):
     distfiles = glob.glob(packagedir + "*dist.npz")
     distfiles.sort()
 
     lowz = [
-        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/BP_z_0_0_dist.npz",
-        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/SDSS_z_44-476mpc_dist.npz",
-        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/LRG_NGC_z_0-1000mpc_dist.npz",
-        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/LRG_NGC_z_900-1600mpc_dist.npz",
-        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/LRG_SGC_z_0-1000mpc_dist.npz",
-        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/LRG_SGC_z_900-1600mpc_dist.npz",
+        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/BP_z=0.0_dist.npz",
+        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/SDSS_z=44-476mpc_dist.npz",
+        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/LRG_NGC_z=0-1000mpc_dist.npz",
+        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/LRG_NGC_z=900-1600mpc_dist.npz",
+        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/LRG_SGC_z=0-1000mpc_dist.npz",
+        "/Users/mwilde/python/pyslime/pyslime/pipeline/data/LRG_SGC_z=900-1600mpc_dist.npz",
     ]
 
     hiz = [f for f in distfiles if f not in lowz]
-    dflowz = ppu.calc_stretch_shift_df(lowz)
-    dfhiz = ppu.calc_stretch_shift_df(hiz)
+
+    dflowz = ppu.calc_stretch_shift_df(lowz, plot=False)
+    dfhiz = ppu.calc_stretch_shift_df(hiz, plot=False)
     dfall = pd.concat([dflowz, dfhiz])
-    dfall.to_csv(packagedir + "transform_tabl_all.csv")
+    dfall.to_csv(otherdatadir + "transform_table.csv")
 
 # STEP 5: load each set of catalogs in and apply mapfunc
 # this happens in 'get_slime_dense_catalog_from-*.ipynb'
