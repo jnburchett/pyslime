@@ -75,7 +75,7 @@ class Slime(object):
             dtype=dtype,
             with_velocity=with_velocity,
         )
-        print(np.shape(sdata))
+        # print(np.shape(sdata))
         # Now grab metadata with proper ordering of axes
         metadata = pu.parse_meta_file(
             "{}{}{}".format(dirname, "/", metafile), axes=axes
