@@ -59,7 +59,5 @@ setup_keywords["package_data"] = {
 setup_keywords["include_package_data"] = True
 setup_keywords["zip_safe"] = True
 
-breakpoint()
-
 setup(**setup_keywords)
 
