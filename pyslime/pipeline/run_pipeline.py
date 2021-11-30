@@ -4,6 +4,7 @@ import glob
 import pandas as pd
 
 from pyslime.pipeline import pipelineUtils as ppu
+from pyslime.pipeline import catalogs, interpolate
 from importlib.resources import path
 
 # All the data live here (except the simulation binaries):
@@ -21,8 +22,8 @@ bpDensityFile_z0p5 = dropboxdir + "BP_0170_densities_1024_0.bin"
 bpslimedir = datadir + "BP_z=0.0"
 bpslime_datafile = "trace.bin"
 
+# this is very slow so dont run if you trust the mapping
 out_pickle_file_z0p0 = packagedir + "mapping_BP_z0p0_1sigma.pick"
-
 out_pickle_file_z0p5 = packagedir + "mapping_BP_z0p5_1sigma.pick"
 if not os.path.exists(out_pickle_file_z0p0):
     ppu.calc_map_bp_slime(
@@ -39,10 +40,10 @@ mapfunc_pickle_file_z0p0 = packagedir + "mapfunc_z0p0.pickle"
 mapfunc_pickle_file_z0p5 = packagedir + "mapfunc_z0p5.pickle"
 
 if not os.path.exists(mapfunc_pickle_file_z0p0):
-    ppu.interpolate(out_pickle_file_z0p0, mapfunc_pickle_file_z0p0)
+    interpolate.interpolate(out_pickle_file_z0p0, mapfunc_pickle_file_z0p0)
 
 if not os.path.exists(mapfunc_pickle_file_z0p5):
-    ppu.interpolate(out_pickle_file_z0p5, mapfunc_pickle_file_z0p5)
+    interpolate.interpolate(out_pickle_file_z0p5, mapfunc_pickle_file_z0p5)
 
 # STEP 3: make the distribtion files since the
 # datafiles are huge. Will not run the slow parts if
@@ -53,7 +54,6 @@ ppu.make_distribution_files(datadir, packagedir)
 # STEP 4: standardize with linear transforms
 # see the standardize_generic.ipynb notebook
 # need to manually be putinto low and hiz groups
-
 if not os.path.exists(otherdatadir + "transform_table.csv"):
     distfiles = glob.glob(packagedir + "*dist.npz")
     distfiles.sort()
@@ -75,11 +75,11 @@ if not os.path.exists(otherdatadir + "transform_table.csv"):
     dfall.to_csv(otherdatadir + "transform_table.csv")
 
 # STEP 5: load each set of catalogs in and apply mapfunc
-# this happens in 'get_slime_dense_catalog_from-*.ipynb'
-# from the dropbox/finalcode folder
-#
-# Now when we load in a dataset, we can simply
-# look up the linear transformation for that dataset
+# this happens in 'query-slime-at-galaxies.ipynb'
+if not os.path.exists(datadir + "prevac_catalog.csv"):
+    tab = catalogs.make_galaxy_cat_with_slimedens(datadir, packagedir)
+
 
 # STEP 5: make_vac_catalog.ipynb
+# need to query the original VACs to get things like ID, MJD...
 # also MAKE SURE TO FIX DUPLICATES its in this notebook

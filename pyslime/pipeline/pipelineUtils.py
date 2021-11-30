@@ -431,30 +431,10 @@ def _get_hist(data, bins):
     return weights, values
 
 
-def interpolate(mapping_data_pickle_file, mapfunc_pickle_file):
-    """Fits a univeriate spline to data to create a function
-    to map the slime density to cosmic overdenstiy.
-
-    Args:
-        mapping_data_pickle_file (str): location of the mapping binned pickle
-        mapfunc_pickle_file ([type]): location to put mapfunc pickle
-    """
-    from scipy.interpolate import InterpolatedUnivariateSpline
-
-    # read in the mapping pickle file
-    smpackage = pickle.load(open(mapping_data_pickle_file, "rb"))
-    smrhobins = smpackage["smrhobins"]
-    midbins = 0.5 * smrhobins[:-1] + 0.5 * smrhobins[1:]
-    nonan = ~np.isnan(smpackage["medvals_bp"])
-    mapfunc = InterpolatedUnivariateSpline(
-        midbins[nonan], smpackage["medvals_bp"][nonan], k=1
-    )
-    pickle.dump(mapfunc, open(mapfunc_pickle_file, "wb"))
-
-
 def get_datafolders(datadir):
     everything = glob.glob(datadir + "*")
     datafolders = [f for f in everything if ".zip" not in f]
+    datafolders = [f for f in datafolders if ".csv" not in f]
     return datafolders
 
 
