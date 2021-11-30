@@ -20,7 +20,7 @@ def load_slime_data(
         xidx = axes.index("x")
         yidx = axes.index("y")
         zidx = axes.index("z")
-        print(np.shape(voxels), (xidx, yidx, zidx))
+        # print(np.shape(voxels), (xidx, yidx, zidx))
         # idxarr = np.array([xidx,yidx,zidx])
         # idxarr = np.roll(idxarr,2)
         # voxels = np.transpose(voxels,[idxarr[0],idxarr[1],idxarr[2]])
