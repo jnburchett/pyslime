@@ -438,11 +438,11 @@ def get_datafolders(datadir):
     return datafolders
 
 
-def get_hist(file):
+def get_hist(file, nbins):
     slime = pu.get_slime(file, dtype=np.float32, standardize=False)
     slimedata = slime.data.ravel()
     bpmin = slimedata[~np.isinf(slimedata)].min()
-    bins = np.linspace(bpmin, np.max(slimedata), 10000)
+    bins = np.linspace(bpmin, np.max(slimedata), nbins)
     uweights, uvalues = _get_hist(slimedata, bins=bins)
     return uweights, uvalues
 

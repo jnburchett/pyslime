@@ -1,9 +1,9 @@
 # TODO list for the production pipeline
 
 ~~1) fix the standardization~~
-2) verify standardiztion works
-3) examine LRG data
-4) examine new sdss method
+~~2) verify standardiztion works~~
+~~3) examine LRG data~~
+~~4) examine new sdss method~~
 
 ## Wishlist
 
