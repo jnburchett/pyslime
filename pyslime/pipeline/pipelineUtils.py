@@ -88,6 +88,7 @@ def sample_bins(
     smrhobins: np.ndarray,
     verbose: bool = True,
     size: int = 2000,
+    comoving_z=0.0,
 ):
     """Sample the slime mold by binning in density. This allows us
     to look at every density regime in slime mold fits and find the
@@ -124,6 +125,10 @@ def sample_bins(
         xdist, ydist, zdist = pu.idx_to_cartesian(
             randidxsx, randidxsy, randidxsz, slime=bpslime
         )
+        xdist = xdist * (1 + comoving_z)
+        ydist = ydist * (1 + comoving_z)
+        zdist = zdist * (1 + comoving_z)
+
         bpdensvals = np.zeros(len(xdist))
         bpidx_x, bpidx_y, bpidx_z = bprho_dist_to_idx(xdist, ydist, zdist)
         bpdensvals = logrhom[bpidx_x, bpidx_y, bpidx_z]
