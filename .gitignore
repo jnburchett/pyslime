@@ -53,3 +53,10 @@ distribute-*.tar.gz
 
 # Dummy files
 tmp.*
+
+# dask
+dask-worker-space
+
+# data
+*.npz
+*.pick*
