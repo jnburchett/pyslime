@@ -8,6 +8,7 @@ def load_slime_data(datafile,griddims,dtype=np.float16, axes='xyz',
         voxels = raw_data.reshape((griddims[2], griddims[1], griddims[0],4))
     else:
         voxels = raw_data.reshape((griddims[2],griddims[1],griddims[0]))
+        #voxels = raw_data.reshape((griddims[0], griddims[1], griddims[2]))
 
 
     if axes is not None:
@@ -25,6 +26,7 @@ def load_slime_data(datafile,griddims,dtype=np.float16, axes='xyz',
         else:
             voxels = np.transpose(voxels,[zidx, yidx, xidx])
             #voxels = np.transpose(voxels, [2, 1, 0])
+
     return voxels
 
 def parse_meta_file(metafile,axes='xyz'):
